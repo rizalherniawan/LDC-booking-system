@@ -1,0 +1,5 @@
+DB_USERNAME = 'username database yang digunakan'
+DB_PASSWORD = 'password database yang digunakan'
+DB_HOST = 'hosting database yang digunakan'
+SALT = 'jumlah salt untuk hashing'
+KEY = 'key untuk token'
