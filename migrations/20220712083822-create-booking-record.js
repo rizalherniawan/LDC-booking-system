@@ -27,9 +27,8 @@ module.exports = {
         }
       },
       book_code: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.STRING,
         allowNull: false,
-        autoIncrement: true
       },
       tanggal: {
         type: Sequelize.DATEONLY,

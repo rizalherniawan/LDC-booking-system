@@ -1,6 +1,7 @@
 const { booking_record } = require('../models')
 const { Op } = require("sequelize")
 const { getTodaysDate, getHours } = require('../handler/timeHandler')
+const generateUID = require('../handler/idHandler')
 
 class Booking {
     // untuk booking ruangan
@@ -10,6 +11,7 @@ class Booking {
             const payload = {
                 user_id: id,
                 room_id: req.body.room_id,
+                book_code: generateUID(),
                 tanggal: req.body.tanggal,
                 jamMasuk: req.body.jamMasuk,
                 jamSelesai: req.body.jamSelesai,
@@ -30,19 +32,19 @@ class Booking {
                 [Op.or]:[
                     {
                        jamMasuk:{
-                        [Op.and]:[{[Op.gt]:payload.jamMasuk},{[Op.lt]:payload.jamSelesai}]
+                        [Op.and]:[{[Op.gte]:payload.jamMasuk},{[Op.lte]:payload.jamSelesai}]
                        } 
                     },
                     {
                         jamSelesai:{
-                         [Op.and]:[{[Op.gt]:payload.jamMasuk},{[Op.lt]:payload.jamSelesai}]
+                         [Op.and]:[{[Op.gte]:payload.jamMasuk},{[Op.lte]:payload.jamSelesai}]
                         }
                     }
                 ]
             }})
             if(findRoom) return res.status(400).json({message: "Room already book within that date and hour"})
-            await booking_record.create(payload)
-            return res.status(200).json({message: "successfully booked"})
+            const created = await booking_record.create(payload)
+            return res.status(200).json({message: "successfully booked", data: created})
         } catch (error) {
             next(error)
         }
@@ -101,12 +103,12 @@ class Booking {
             if(payload.jamMasuk < "08:00" || payload.jamMasuk > "22:00") return res.status(400).json({message: "invalid time input"})
             else if(payload.jamSelesai <= payload.jamMasuk || payload.jamSelesai > "23:00") return res.status(400).json({message: "invalid time input"})
             else if(payload.tanggal < getTodaysDate()) return res.status(400).json({message: "cannot set date before current date"})
-            const findBookingCode = await booking_record.findOne({where:{id:req.body.book_id}})
+            const findBookingCode = await booking_record.findOne({where:{id:req.body.book_code}})
             if(!findBookingCode) return res.status(400).json({message: "Book ID is not found"})
             const findDate = await booking_record.findOne({where:{tanggal:payload.tanggal}})
             if(!findDate){
-                const createRecord = await booking_record.update(payload,{where:{id:req.body.book_id}})
-                return res.status(200).json({message: "successfully booked", data: createRecord})
+                await booking_record.update(payload,{where:{id:req.body.book_code}})
+                return res.status(200).json({message: "successfully updated"})
             }
             if(payload.jamMasuk < getHours()) return res.status(400).json({message:"cannot set hour berfore current time"})
             const findRoom = await booking_record.findOne({where:{
@@ -115,21 +117,20 @@ class Booking {
                 [Op.or]:[
                     {
                        jamMasuk:{
-                        [Op.and]:[{[Op.gt]:payload.jamMasuk},{[Op.lt]:payload.jamSelesai}]
+                        [Op.and]:[{[Op.gte]:payload.jamMasuk},{[Op.lte]:payload.jamSelesai}]
                        } 
                     },
                     {
                         jamSelesai:{
-                         [Op.and]:[{[Op.gt]:payload.jamMasuk},{[Op.lt]:payload.jamSelesai}]
+                         [Op.and]:[{[Op.gte]:payload.jamMasuk},{[Op.lte]:payload.jamSelesai}]
                         }
                     }
                 ]
             }})
             if(findRoom) return res.status(400).json({message: "Room already book within that date and hour"})
-            const createRecord = await booking_record.update(payload,{where:{id:req.body.book_id}})
-            return res.status(200).json({message: "successfully booked", data: createRecord})
+            await booking_record.update(payload,{where:{id:req.body.book_code}})
+            return res.status(200).json({message: "successfully updated"})
         } catch (error) {
-            console.log(error)
             next(error)
         }
     }
